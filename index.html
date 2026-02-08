@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Mastery Pro</title>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database-compat.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --p: #4f46e5; --bg: #0f172a; --card: rgba(255, 255, 255, 0.05); --text: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background: radial-gradient(circle at top right, #1e1b4b, #0f172a); color: var(--text); margin: 0; min-height: 100vh; padding: 10px; }
+        
+        /* Professional Auth Box */
+        .auth-box { max-width: 360px; margin: 80px auto; background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); padding: 40px 30px; border-radius: 28px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        input { width: 100%; padding: 14px; margin: 10px 0; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; color: white; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--p); background: rgba(255,255,255,0.1); }
+        button { width: 100%; padding: 15px; background: var(--p); color: white; border: none; border-radius: 14px; font-weight: 600; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4); }
+        button:hover { transform: translateY(-2px); }
+
+        /* App Layout */
+        .container { max-width: 1200px; margin: auto; }
+        .header-nav { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; }
+        .month-nav { display: flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.05); padding: 5px 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
+        .nav-btn { background: none; border: 1px solid rgba(255,255,255,0.2); width: auto; padding: 2px 10px; box-shadow: none; font-size: 18px; line-height: 1; }
+        
+        /* Quote Card */
+        .quote-card { background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(139, 92, 246, 0.1)); border: 1px solid rgba(255,255,255,0.1); padding: 20px; border-radius: 20px; text-align: center; margin-bottom: 25px; min-height: 50px; display: flex; align-items: center; justify-content: center; }
+        #quote-text { font-style: italic; color: #cbd5e1; font-size: 14px; }
+
+        /* Grid Styling */
+        .grid-card { background: var(--card); border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); padding: 20px; margin-bottom: 25px; }
+        .table-wrap { overflow-x: auto; border-radius: 15px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+        th, td { padding: 12px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; }
+        th { color: #94a3b8; font-weight: 400; background: rgba(0,0,0,0.2); }
+        .habit-col { text-align: left; font-weight: 600; min-width: 160px; background: #1e293b; position: sticky; left: 0; z-index: 10; }
+        
+        /* Status Markers */
+        .cell { cursor: pointer; transition: 0.2s; border-radius: 6px; }
+        .done { color: #4ade80; text-shadow: 0 0 10px rgba(74, 222, 128, 0.4); font-size: 18px; font-weight: bold; }
+        .miss { color: #fb7185; text-shadow: 0 0 10px rgba(251, 113, 133, 0.4); font-size: 18px; font-weight: bold; }
+        .today-hl { background: rgba(79, 70, 229, 0.2); border: 2px solid var(--p) !important; }
+        .disabled { opacity: 0.2; cursor: not-allowed; }
+        .hidden { display: none !important; }
+
+        /* Stats Cards */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 20px; }
+        .stat-card { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.08); text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen" class="auth-box">
+        <h2 style="text-align:center; margin-bottom:30px;" id="auth-title">Welcome Back 💎</h2>
+        <input type="email" id="email" placeholder="Email Address">
+        <input type="password" id="password" placeholder="Password">
+        <div id="signup-fields" class="hidden"><input type="tel" id="phone" placeholder="Phone Number"></div>
+        <button onclick="handleAuth()" id="auth-btn">Login</button>
+        <p onclick="toggleAuthMode()" id="toggle-link" style="text-align:center; font-size:13px; margin-top:20px; cursor:pointer; color:#94a3b8;">Create New Account</p>
+    </div>
+
+    <div id="app-screen" class="container hidden">
+        <div class="header-nav">
+            <div class="month-nav">
+                <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
+                <h3 id="month-label" style="margin:0; width: 150px; text-align: center; font-size: 16px;"></h3>
+                <button class="nav-btn" onclick="changeMonth(1)">›</button>
+            </div>
+            <button onclick="logout()" style="width:auto; padding:8px 18px; background:#334155; font-size:12px;">Sign Out</button>
+        </div>
+
+        <div class="quote-card"><div id="quote-text">"Loading inspiration..."</div></div>
+
+        <div class="grid-card">
+            <div style="display:flex; gap:12px; margin-bottom:20px;">
+                <input type="text" id="habitInput" placeholder="Add a new goal..." style="margin:0; flex:1;">
+                <button onclick="addNewHabit()" style="width:auto; padding:0 25px;">Add</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr id="grid-header"><th class="habit-col">Activity / Day</th></tr></thead>
+                    <tbody id="grid-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <h4 style="margin: 0 0 10px 5px; font-weight: 400; color: #94a3b8;">Monthly Performance</h4>
+        <div id="stats-section" class="stats-grid"></div>
+    </div>
+
+<script>
+    // --- FIREBASE CONFIG ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyCU5IimydmRWLtkC6QrMBbXPFsE-Tm9QGs",
+        authDomain: "my-habit-tracker-app-79a79.firebaseapp.com",
+        databaseURL: "https://my-habit-tracker-app-79a79-default-rtdb.firebaseio.com",
+        projectId: "my-habit-tracker-app-79a79",
+        storageBucket: "my-habit-tracker-app-79a79.appspot.com",
+        messagingSenderId: "794270275841",
+        appId: "1:794270275841:web:db386f87428f528734919a"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const rdb = firebase.database();
+
+    const quotes = [
+        "Work hard in silence, let your success be your noise.",
+        "मेहनत इतनी खामोशी से करो कि सफलता शोर मचा दे।",
+        "Discipline is doing what needs to be done, even if you don't want to do it.",
+        "Small steps every day lead to big results.",
+        "हर दिन छोटे कदम बड़े परिणामों की ओर ले जाते हैं।",
+        "Your future is created by what you do today.",
+        "आपका भविष्य उससे बनता है जो आप आज करते हैं।"
+    ];
+
+    let isLoginMode = true;
+    let cloudData = { habits: {}, logs: {} };
+    let currentViewDate = new Date();
+
+    function setRandomQuote() {
+        document.getElementById('quote-text').innerText = quotes[Math.floor(Math.random() * quotes.length)];
+    }
+
+    function toggleAuthMode() {
+        isLoginMode = !isLoginMode;
+        document.getElementById('auth-title').innerText = isLoginMode ? "Welcome Back 💎" : "Join the Elite ✨";
+        document.getElementById('auth-btn').innerText = isLoginMode ? "Login" : "Start Journey";
+        document.getElementById('signup-fields').classList.toggle('hidden', isLoginMode);
+    }
+
+    function handleAuth() {
+        const email = document.getElementById('email').value, pass = document.getElementById('password').value;
+        if (isLoginMode) {
+            auth.signInWithEmailAndPassword(email, pass).catch(e => alert(e.message));
+        } else {
+            const phone = document.getElementById('phone').value;
+            auth.createUserWithEmailAndPassword(email, pass).then(u => {
+                rdb.ref('users/' + u.user.uid + '/profile').set({ email, phone });
+                u.user.sendEmailVerification();
+                alert("Check email for verification!"); toggleAuthMode(); auth.signOut();
+            }).catch(e => alert(e.message));
+        }
+    }
+
+    auth.onAuthStateChanged(user => {
+        if (user && user.emailVerified) {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            setRandomQuote();
+            listenToCloud();
+        } else {
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('app-screen').classList.add('hidden');
+        }
+    });
+
+    function listenToCloud() {
+        rdb.ref('users/' + auth.currentUser.uid).on('value', (snapshot) => {
+            const data = snapshot.val();
+            cloudData.habits = (data && data.habits) ? data.habits : {};
+            cloudData.logs = (data && data.logs) ? data.logs : {};
+            renderGrid();
+        });
+    }
+
+    function changeMonth(offset) {
+        currentViewDate.setMonth(currentViewDate.getMonth() + offset);
+        renderGrid();
+    }
+
+    function renderGrid() {
+        const header = document.getElementById('grid-header'), body = document.getElementById('grid-body');
+        const statsBox = document.getElementById('stats-section');
+        const y = currentViewDate.getFullYear(), m = currentViewDate.getMonth();
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+
+        document.getElementById('month-label').innerText = new Intl.DateTimeFormat('en-US', {month:'long', year:'numeric'}).format(currentViewDate);
+        header.innerHTML = '<th class="habit-col">Activity / Day</th>';
+        for (let d = 1; d <= daysInMonth; d++) {
+            const isToday = `${y}-${m+1}-${d}` === todayStr;
+            header.innerHTML += `<th class="${isToday ? 'today-hl' : ''}">${d}</th>`;
+        }
+
+        body.innerHTML = '';
+        statsBox.innerHTML = '';
+
+        Object.keys(cloudData.habits).forEach(hID => {
+            let done = 0, total = 0;
+            let row = `<tr><td class="habit-col">${cloudData.habits[hID]}</td>`;
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateID = `${y}-${m+1}-${d}`;
+                const status = (cloudData.logs[dateID] && cloudData.logs[dateID][hID]) ? cloudData.logs[dateID][hID] : "";
+                if(status === '✅') { done++; total++; } else if(status === '❌') { total++; }
+                
+                let display = status === '✅' ? '✔' : (status === '❌' ? '✖' : '-');
+                let cls = status === '✅' ? 'done' : (status === '❌' ? 'miss' : 'empty');
+                if(dateID !== todayStr && status === "") cls += " disabled";
+                if(dateID === todayStr) cls += " today-hl";
+                row += `<td class="cell ${cls}" onclick="markGrid('${dateID}', '${hID}')">${display}</td>`;
+            }
+            body.innerHTML += row + `</tr>`;
+
+            const prog = total > 0 ? Math.round((done/total)*100) : 0;
+            statsBox.innerHTML += `<div class="stat-card"><div style="font-size:11px;color:#94a3b8">${cloudData.habits[hID]}</div><div style="font-size:20px;font-weight:600;color:${prog>70?'#4ade80':'#fb7185'}">${prog}%</div></div>`;
+        });
+    }
+
+    function markGrid(dateID, hID) {
+        const now = new Date();
+        const todayID = `${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+        if (dateID !== todayID) return alert("Discipline: You can only log for TODAY.");
+        if (cloudData.logs[dateID] && cloudData.logs[dateID][hID]) return alert("Entry Locked.");
+
+        const choice = confirm(`Lock Today?\nOK = ✔ (Done)\nCancel = ✖ (Missed)`);
+        rdb.ref('users/' + auth.currentUser.uid + '/logs/' + dateID + '/' + hID).set(choice ? "✅" : "❌");
+    }
+
+    function addNewHabit() {
+        const name = document.getElementById('habitInput').value;
+        if(name) rdb.ref('users/' + auth.currentUser.uid + '/habits/h' + Date.now()).set(name);
+        document.getElementById('habitInput').value = '';
+    }
+
+    function logout() { auth.signOut().then(() => location.reload()); }
+</script>
+</body>
+</html>
