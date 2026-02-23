@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Mastery Pro | Motivation & 3D</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root { --primary: #00ff88; --bg: #121212; --card: #1e1e1e; --text: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+        .navbar { display: flex; justify-content: space-between; padding: 20px; background: #1a1a1a; position: sticky; top: 0; z-index: 100; }
+        #container-3d { width: 100%; height: 200px; background: radial-gradient(circle, #222, #121212); }
+        .container { padding: 20px; }
+        .habit-card { background: var(--card); padding: 15px; margin-bottom: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--primary); }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        input { padding: 10px; border-radius: 5px; border: none; flex: 1; }
+        .btn { border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-done { background: var(--primary); color: #000; }
+        .btn-reset { background: #ff9800; color: white; margin-left: 5px; }
+        .btn-del { background: #f44336; color: white; margin-left: 5px; }
+        .side-menu { height: 100%; width: 0; position: fixed; z-index: 1000; top: 0; right: 0; background-color: #111; overflow-x: hidden; transition: 0.5s; padding-top: 60px; }
+        .side-menu a { padding: 15px 25px; text-decoration: none; font-size: 18px; color: #818181; display: block; cursor: pointer; }
+        #quote-area { text-align: center; padding: 10px; font-style: italic; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div style="font-size: 22px; font-weight: bold;">🚀 Habit Mastery Pro</div>
+    <button style="background:none; border:none; color:white; font-size:24px; cursor:pointer;" onclick="toggleMenu()">☰</button>
+</nav>
+
+<div id="container-3d"></div>
+<div id="quote-area">"शुरुआत करना ही सबसे कठिन है!"</div>
+
+<div class="container">
+    <div class="input-group">
+        <input type="text" id="habitInput" placeholder="नई आदत...">
+        <input type="time" id="habitTime">
+        <button class="btn btn-done" onclick="addHabit()">Add +</button>
+    </div>
+    <div id="habitList"></div>
+</div>
+
+<div id="side-menu" class="side-menu">
+    <a onclick="toggleMenu()" style="font-size: 25px;">&times; Close</a>
+    <a onclick="downloadPDF()">📥 Download PDF Report</a>
+    <a onclick="resetAll()" style="color: red;">⚠️ Reset All Data</a>
+</div>
+
+<script>
+    let habits = JSON.parse(localStorage.getItem('habits')) || [];
+    const successSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
+    const failSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3');
+
+    // --- 3D Scene ---
+    let scene, camera, renderer, crystal;
+    function init3D() {
+        const container = document.getElementById('container-3d');
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        container.appendChild(renderer.domElement);
+        crystal = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0x00ff88, wireframe: true }));
+        scene.add(crystal);
+        const light = new THREE.PointLight(0xffffff, 1); light.position.set(5,5,5); scene.add(light);
+        camera.position.z = 3;
+        function animate() { requestAnimationFrame(animate); crystal.rotation.y += 0.01; renderer.render(scene, camera); }
+        animate();
+    }
+
+    // --- Core Logic ---
+    function addHabit() {
+        const name = document.getElementById('habitInput').value;
+        const time = document.getElementById('habitTime').value;
+        if(!name || !time) return alert("Fill all details!");
+        habits.push({ id: Date.now(), name, time, streak: 0 });
+        saveAndRender();
+    }
+
+    function completeHabit(id) {
+        habits = habits.map(h => h.id === id ? {...h, streak: h.streak + 1} : h);
+        successSound.play();
+        crystal.scale.set(1.5, 1.5, 1.5); setTimeout(() => crystal.scale.set(1,1,1), 300);
+        saveAndRender();
+    }
+
+    function resetStreak(id) {
+        failSound.play();
+        if(confirm("Reset this streak?")) {
+            habits = habits.map(h => h.id === id ? {...h, streak: 0} : h);
+            saveAndRender();
+        }
+    }
+
+    function downloadPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.text("Habit Mastery Pro Report", 20, 20);
+        habits.forEach((h, i) => doc.text(`${i+1}. ${h.name} | Streak: ${h.streak}`, 20, 30 + (i*10)));
+        doc.save("Habit_Progress.pdf");
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('habits', JSON.stringify(habits));
+        const list = document.getElementById('habitList');
+        list.innerHTML = habits.map(h => `
+            <div class="habit-card">
+                <div><strong>${h.name}</strong><br><small>⏰ ${h.time} | 🔥 ${h.streak}</small></div>
+                <div>
+                    <button class="btn btn-done" onclick="completeHabit(${h.id})">✅</button>
+                    <button class="btn btn-reset" onclick="resetStreak(${h.id})">❌</button>
+                </div>
+            </div>`).join('');
+    }
+
+    function toggleMenu() { const m = document.getElementById("side-menu"); m.style.width = m.style.width === "250px" ? "0" : "250px"; }
+    window.onload = () => { init3D(); saveAndRender(); };
+</script>
+</body>
+</html>
