@@ -1,123 +1,126 @@
-<!DOCTYPE html>
-<html lang="hi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Habit Mastery Pro | Motivation & 3D</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <style>
-        :root { --primary: #00ff88; --bg: #121212; --card: #1e1e1e; --text: #ffffff; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; }
-        .navbar { display: flex; justify-content: space-between; padding: 20px; background: #1a1a1a; position: sticky; top: 0; z-index: 100; }
-        #container-3d { width: 100%; height: 200px; background: radial-gradient(circle, #222, #121212); }
-        .container { padding: 20px; }
-        .habit-card { background: var(--card); padding: 15px; margin-bottom: 12px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--primary); }
-        .input-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        input { padding: 10px; border-radius: 5px; border: none; flex: 1; }
-        .btn { border: none; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn-done { background: var(--primary); color: #000; }
-        .btn-reset { background: #ff9800; color: white; margin-left: 5px; }
-        .btn-del { background: #f44336; color: white; margin-left: 5px; }
-        .side-menu { height: 100%; width: 0; position: fixed; z-index: 1000; top: 0; right: 0; background-color: #111; overflow-x: hidden; transition: 0.5s; padding-top: 60px; }
-        .side-menu a { padding: 15px 25px; text-decoration: none; font-size: 18px; color: #818181; display: block; cursor: pointer; }
-        #quote-area { text-align: center; padding: 10px; font-style: italic; color: var(--primary); }
-    </style>
-</head>
-<body>
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-<nav class="navbar">
-    <div style="font-size: 22px; font-weight: bold;">🚀 Habit Mastery Pro</div>
-    <button style="background:none; border:none; color:white; font-size:24px; cursor:pointer;" onclick="toggleMenu()">☰</button>
-</nav>
+const AdvancedHabitApp = () => {
+  const [habits, setHabits] = useState([
+    { id: 1, name: 'Read 10 Pages 📖', completed: false },
+    { id: 2, name: 'Meditation 🧘', completed: true },
+  ]);
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newHabitName, setNewHabitName] = useState('');
 
-<div id="container-3d"></div>
-<div id="quote-area">"शुरुआत करना ही सबसे कठिन है!"</div>
+  // हैबिट टॉगल करने का फंक्शन
+  const toggleHabit = (id) => {
+    setHabits(habits.map(h => 
+      h.id === id ? { ...h, completed: !h.completed } : h
+    ));
+  };
 
-<div class="container">
-    <div class="input-group">
-        <input type="text" id="habitInput" placeholder="नई आदत...">
-        <input type="time" id="habitTime">
-        <button class="btn btn-done" onclick="addHabit()">Add +</button>
+  // नई हैबिट जोड़ने का फंक्शन
+  const addHabit = () => {
+    if (newHabitName.trim()) {
+      setHabits([...habits, { id: Date.now(), name: newHabitName, completed: false }]);
+      setNewHabitName('');
+      setIsModalOpen(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0f172a] text-white p-6 font-sans overflow-hidden">
+      
+      {/* Header with Fade-in Animation */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
+          Focus
+        </h1>
+        <p className="text-gray-400 mt-1">Consistency is key 🔑</p>
+      </motion.div>
+
+      {/* Habits List with Stagger Animation */}
+      <div className="space-y-4 mb-24">
+        <AnimatePresence>
+          {habits.map((habit) => (
+            <motion.div
+              key={habit.id}
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.5 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => toggleHabit(habit.id)}
+              className={`p-5 rounded-3xl cursor-pointer flex items-center justify-between border ${
+                habit.completed ? 'bg-green-500/20 border-green-500' : 'bg-gray-800 border-gray-700'
+              } transition-colors duration-300`}
+            >
+              <span className={`text-lg font-semibold ${habit.completed ? 'line-through opacity-50' : ''}`}>
+                {habit.name}
+              </span>
+              <motion.div 
+                animate={{ scale: habit.completed ? [1, 1.4, 1] : 1 }}
+                className={`w-7 h-7 rounded-full border-2 flex items-center justify-center ${
+                  habit.completed ? 'bg-green-500 border-green-500' : 'border-gray-500'
+                }`}
+              >
+                {habit.completed && <span className="text-black text-sm font-bold">✓</span>}
+              </motion.div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+
+      {/* Floating Plus Button with Pulse Animation */}
+      <motion.button 
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => setIsModalOpen(true)}
+        className="fixed bottom-10 right-8 w-16 h-16 bg-blue-600 rounded-2xl shadow-2xl shadow-blue-500/40 flex items-center justify-center text-4xl"
+      >
+        +
+      </motion.button>
+
+      {/* Add Habit Modal (Pop-up) */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end justify-center z-50"
+            onClick={() => setIsModalOpen(false)}
+          >
+            <motion.div 
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gray-900 w-full p-8 rounded-t-[40px] border-t border-gray-700"
+            >
+              <h2 className="text-2xl font-bold mb-6">New Habit</h2>
+              <input 
+                autoFocus
+                type="text"
+                placeholder="Ex: Drink water, Exercise..."
+                className="w-full bg-gray-800 p-4 rounded-2xl border border-gray-700 focus:outline-none focus:border-blue-500 text-lg"
+                value={newHabitName}
+                onChange={(e) => setNewHabitName(e.target.value)}
+              />
+              <button 
+                onClick={addHabit}
+                className="w-full bg-blue-600 p-4 rounded-2xl mt-6 font-bold text-lg active:bg-blue-700"
+              >
+                Create Habit
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
-    <div id="habitList"></div>
-</div>
+  );
+};
 
-<div id="side-menu" class="side-menu">
-    <a onclick="toggleMenu()" style="font-size: 25px;">&times; Close</a>
-    <a onclick="downloadPDF()">📥 Download PDF Report</a>
-    <a onclick="resetAll()" style="color: red;">⚠️ Reset All Data</a>
-</div>
-
-<script>
-    let habits = JSON.parse(localStorage.getItem('habits')) || [];
-    const successSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3');
-    const failSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3');
-
-    // --- 3D Scene ---
-    let scene, camera, renderer, crystal;
-    function init3D() {
-        const container = document.getElementById('container-3d');
-        scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(container.clientWidth, container.clientHeight);
-        container.appendChild(renderer.domElement);
-        crystal = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), new THREE.MeshStandardMaterial({ color: 0x00ff88, wireframe: true }));
-        scene.add(crystal);
-        const light = new THREE.PointLight(0xffffff, 1); light.position.set(5,5,5); scene.add(light);
-        camera.position.z = 3;
-        function animate() { requestAnimationFrame(animate); crystal.rotation.y += 0.01; renderer.render(scene, camera); }
-        animate();
-    }
-
-    // --- Core Logic ---
-    function addHabit() {
-        const name = document.getElementById('habitInput').value;
-        const time = document.getElementById('habitTime').value;
-        if(!name || !time) return alert("Fill all details!");
-        habits.push({ id: Date.now(), name, time, streak: 0 });
-        saveAndRender();
-    }
-
-    function completeHabit(id) {
-        habits = habits.map(h => h.id === id ? {...h, streak: h.streak + 1} : h);
-        successSound.play();
-        crystal.scale.set(1.5, 1.5, 1.5); setTimeout(() => crystal.scale.set(1,1,1), 300);
-        saveAndRender();
-    }
-
-    function resetStreak(id) {
-        failSound.play();
-        if(confirm("Reset this streak?")) {
-            habits = habits.map(h => h.id === id ? {...h, streak: 0} : h);
-            saveAndRender();
-        }
-    }
-
-    function downloadPDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        doc.text("Habit Mastery Pro Report", 20, 20);
-        habits.forEach((h, i) => doc.text(`${i+1}. ${h.name} | Streak: ${h.streak}`, 20, 30 + (i*10)));
-        doc.save("Habit_Progress.pdf");
-    }
-
-    function saveAndRender() {
-        localStorage.setItem('habits', JSON.stringify(habits));
-        const list = document.getElementById('habitList');
-        list.innerHTML = habits.map(h => `
-            <div class="habit-card">
-                <div><strong>${h.name}</strong><br><small>⏰ ${h.time} | 🔥 ${h.streak}</small></div>
-                <div>
-                    <button class="btn btn-done" onclick="completeHabit(${h.id})">✅</button>
-                    <button class="btn btn-reset" onclick="resetStreak(${h.id})">❌</button>
-                </div>
-            </div>`).join('');
-    }
-
-    function toggleMenu() { const m = document.getElementById("side-menu"); m.style.width = m.style.width === "250px" ? "0" : "250px"; }
-    window.onload = () => { init3D(); saveAndRender(); };
-</script>
-</body>
-</html>
+export default AdvancedHabitApp;
