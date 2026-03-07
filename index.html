@@ -1,33 +1,4 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-
-const AdvancedHabitApp = () => {
-  const [habits, setHabits] = useState([
-    { id: 1, name: 'Read 10 Pages 📖', completed: false },
-    { id: 2, name: 'Meditation 🧘', completed: true },
-  ]);
-  
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newHabitName, setNewHabitName] = useState('');
-
-  // हैबिट टॉगल करने का फंक्शन
-  const toggleHabit = (id) => {
-    setHabits(habits.map(h => 
-      h.id === id ? { ...h, completed: !h.completed } : h
-    ));
-  };
-
-  // नई हैबिट जोड़ने का फंक्शन
-  const addHabit = () => {
-    if (newHabitName.trim()) {
-      setHabits([...habits, { id: Date.now(), name: newHabitName, completed: false }]);
-      setNewHabitName('');
-      setIsModalOpen(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-[#0f172a] text-white p-6 font-sans overflow-hidden">
+ <div className="min-h-screen bg-[#0f172a] text-white p-6 font-sans overflow-hidden">
       
       {/* Header with Fade-in Animation */}
       <motion.div 
